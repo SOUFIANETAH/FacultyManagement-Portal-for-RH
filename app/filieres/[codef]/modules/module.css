@@ -1,0 +1,137 @@
+:root {
+    --primary-color: #315277;
+    --secondary-color: #3498db;
+    --accent-color: #2980b9;
+    --text-color: #2c3e50;
+    --light-bg: #f5f8fa;
+    --error-color: #e74c3c;
+    --success-color: #27ae60;
+    --warning-color: #f39c12;
+    --border-radius: 8px;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --transition: all 0.3s ease;
+}
+
+/* Container for the entire view */
+.modules-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    background-color: white;
+}
+
+/* Header section */
+.modules-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.modules-header h1 {
+    color: var(--primary-color);
+    font-size: 2rem;
+    margin-bottom: 0.25rem;
+}
+
+.modules-header .meta {
+    color: #888;
+    font-size: 1rem;
+}
+
+/* Grid layout for module cards */
+.modules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Individual module card */
+.module-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.25rem;
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
+    border: 1px solid #e0e0e0;
+}
+
+.module-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.module-card h3 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.module-info {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.module-info span {
+    display: inline-block;
+    background-color: var(--light-bg);
+    padding: 0.4rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+/* Loading and Error States */
+.loading-state,
+.error-state,
+.empty-state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem 1rem;
+    font-size: 1.25rem;
+    text-align: center;
+    color: #666;
+    border-radius: var(--border-radius);
+    background-color: #fcfcfc;
+    box-shadow: var(--box-shadow);
+}
+
+.error-state {
+    color: var(--error-color);
+}
+
+.empty-state {
+    color: #888;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+    .modules-wrapper {
+        padding: 1.25rem;
+    }
+
+    .modules-header h1 {
+        font-size: 1.6rem;
+    }
+
+    .modules-header .meta {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .modules-wrapper {
+        padding: 1rem;
+    }
+
+    .module-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .module-card {
+        padding: 1rem;
+    }
+}

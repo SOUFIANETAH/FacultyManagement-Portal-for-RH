@@ -1,0 +1,137 @@
+/* Style ultra-professionnel */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', 'Roboto', sans-serif;
+  background: linear-gradient(145deg, #f3f4f6 0%, #e5e7eb 100%);
+  background-attachment: fixed;
+  color: #1f2937;
+  min-height: 100vh;
+}
+
+.etudiants-page {
+  padding: 50px 20px;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.etudiants-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.etudiants-title {
+  font-size: 2.75rem;
+  color: #0f172a;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.search-input {
+  padding: 12px 20px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  font-size: 1rem;
+  width: 320px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+}
+
+.table-container {
+  overflow-x: auto;
+  background: white;
+  padding: 25px;
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+.table-container:hover {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+}
+
+.documents-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.documents-table th,
+.documents-table td {
+  padding: 20px;
+  text-align: left;
+}
+
+.documents-table th {
+  background-color: #f8fafc;
+  font-size: 1.1rem;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.documents-table td {
+  border-top: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.documents-table tr:hover {
+  background-color: #f1f5f9;
+  transition: background-color 0.2s ease;
+}
+
+.doc-title-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.doc-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.confid-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background-color: #e0f2fe;
+  color: #0369a1;
+  transition: background-color 0.3s ease;
+}
+
+.confid-badge.public {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.confid-badge.restreint {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.action-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s, color 0.2s;
+}
+
+.action-button:hover {
+  transform: scale(1.15);
+  color: #1d4ed8;
+}

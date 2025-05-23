@@ -1,0 +1,263 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AlertType {
+  error
+  warning
+  info
+}
+
+enum RequestType {
+  adduser
+  deleteuser
+  updateuser
+  register
+  announcement
+}
+
+enum RequestStatus {
+  pending
+  dean_approved
+  dean_rejected
+  admin_approved
+  admin_rejected
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+}
+
+model User {
+  id              Int        @id @default(autoincrement())
+  email           String     @unique
+  password        String
+  name            String?
+  role            String
+  department      String?
+  status          UserStatus @default(PENDING)
+  resetToken      String?
+  resetTokenExpiry DateTime?
+  personneId      Int?
+  personne        Personne?  @relation(fields: [personneId], references: [idp])
+  alerts          Alert[]
+  sessions        Session[]
+  requests        requests[]
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Alert {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String
+  userId      Int?
+  type        AlertType
+  createdAt   DateTime  @default(now())
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model requests {
+  id          Int           @id @default(autoincrement())
+  title       String
+  description String
+  userId      Int?
+  type        RequestType
+  createdAt   DateTime      @default(now())
+  status      RequestStatus
+  department  String?
+  status_user UserStatus    @default(PENDING)
+  status_doyen RequestStatus  @default(pending)
+  status_admin RequestStatus  @default(pending)
+  userData    Json?
+  personData  Json?
+  user        User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// --- Academic Database Structure ---
+
+model Personne {
+  idp                  Int                    @id @default(autoincrement()) @map("idp")
+  nom                  String                 @db.VarChar(100)
+  prenom               String                 @db.VarChar(100)
+  cin                  String?                @unique(map: "cin") @db.VarChar(50)
+  adr                  String?                @db.VarChar(255)
+  ville                String?                @db.VarChar(100)
+  date_nai             DateTime?              @db.Date
+  email                String?                @unique(map: "email") @db.VarChar(100)
+  tele                 String?                @db.VarChar(20)
+  photo                Bytes?
+  etudiants            etudiants?
+  personne_annonce     personne_annonce[]
+  personne_departement personne_departement[]
+  personne_document    personne_document[]
+  personne_role        personne_role[]
+  users             User[]
+
+  @@map("personnes")
+  personnels personnels[]
+}
+
+model etudiants {
+  idp       Int        @id
+  cne       String?    @unique(map: "cne") @db.VarChar(50)
+  niveau    String?    @db.VarChar(50)
+  date_insc DateTime?  @db.Date
+  statut    String?    @db.VarChar(50)
+  date_val  date_val[]
+  personnes Personne   @relation(fields: [idp], references: [idp], onDelete: Cascade, onUpdate: NoAction)
+
+  personne_document personne_document[]
+}
+
+model date_val {
+  id        Int        @id @default(autoincrement())
+  date_val  DateTime?  @db.Date
+  moyenne   Decimal?   @db.Decimal(5, 2)
+  mention   String?    @db.VarChar(50)
+  idp       Int?
+  codem     String?    @db.VarChar(20)
+  etudiants etudiants? @relation(fields: [idp], references: [idp], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model annonces {
+  ida              Int                @id @default(autoincrement())
+  titre            String             @db.VarChar(100)
+  contenu          String?
+  date_pub         DateTime?          @db.Date
+  deg_imp          Int?
+  personne_annonce personne_annonce[]
+}
+
+model personne_annonce {
+  idp              Int
+  ida              Int
+  date_proposition DateTime? @db.Date
+  annonces         annonces  @relation(fields: [ida], references: [ida], onDelete: Cascade, onUpdate: NoAction)
+  personnes        Personne  @relation(fields: [idp], references: [idp], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([idp, ida])
+  @@map("personne_annonce")
+}
+
+model departements {
+  coded                String                 @id @db.VarChar(20)
+  nom                  String?                @db.VarChar(100)
+  description          String?
+  date_creat           DateTime?              @db.Date
+  codee                String?                @db.VarChar(20)
+  etablissements       etablissements?        @relation(fields: [codee], references: [codee], onDelete: Cascade, onUpdate: NoAction)
+  personne_departement personne_departement[]
+  filieres             filieres[]             @relation("DepartementFilieres")
+}
+
+model personne_departement {
+  idp          Int
+  coded        String       @db.VarChar(20)
+  departements departements @relation(fields: [coded], references: [coded], onDelete: Cascade, onUpdate: NoAction)
+  personnes    Personne     @relation(fields: [idp], references: [idp], onDelete: NoAction)
+
+  @@id([idp, coded])
+}
+
+model documents {
+  iddoc             Int                 @id @default(autoincrement())
+  titre             String              @db.VarChar(100)
+  type              String?             @db.VarChar(50)
+  chemin            String?             @db.VarChar(255)
+  date_creat        DateTime?           @db.Date
+  version           String?             @db.VarChar(20)
+  niveau_confid     Int?
+  personne_document personne_document[]
+}
+
+model personne_document {
+  idp              Int
+  iddoc            Int
+  date_publication DateTime?       @db.Date
+  idetud           Int?            // FK to etudiants
+  idpersonnel      Int?            // FK to personnels
+
+  documents        documents       @relation(fields: [iddoc], references: [iddoc], onDelete: Cascade, onUpdate: NoAction)
+  personnes        Personne        @relation(fields: [idp], references: [idp], onDelete: Cascade, onUpdate: NoAction)
+  etudiant         etudiants?      @relation(fields: [idetud], references: [idp])
+  personnel        personnels?     @relation("PersonnelDocuments", fields: [idpersonnel], references: [idpersonnel])
+
+  @@id([idp, iddoc])
+}
+model document_templates {
+  id       Int      @id @default(autoincrement())
+  type     String   // 'etudiant' | 'personnel'
+  title    String
+  content  String   // Can be JSON or plain text with placeholders
+  createdAt DateTime @default(now())
+}
+
+
+model personnels {
+  idpersonnel Int       @id @default(autoincrement())
+  fonction    String?   @db.VarChar(100)
+  specialite  String?   @db.VarChar(100)
+  idp         Int       @unique
+  personne    Personne  @relation(fields: [idp], references: [idp], onDelete: Cascade)
+  documents   personne_document[] @relation("PersonnelDocuments")
+}
+
+
+model personne_role {
+  idp       Int
+  role      String   @db.VarChar(50)
+  personnes Personne @relation(fields: [idp], references: [idp], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([idp, role])
+}
+
+model etablissements {
+  codee        String         @id @db.VarChar(20)
+  nom          String         @db.VarChar(100)
+  adresse      String?        @db.VarChar(255)
+  ville        String?        @db.VarChar(100)
+  code_postal  String?        @db.VarChar(20)
+  departements departements[]
+}
+
+model filieres {
+  codef          String           @id @db.VarChar(20)
+  niveau         String?          @db.VarChar(50)
+  duree          Int?
+  intitule       String?          @db.VarChar(100)
+  filiere_module filiere_module[]
+  coded          String?          @db.VarChar(20)  // Add this field
+  departement    departements?    @relation("DepartementFilieres", fields: [coded], references: [coded])  // Add this relation
+}
+
+model modules {
+  codem    String  @id @db.VarChar(20)
+  intitule String? @db.VarChar(100)
+  volumeh  Int?
+  semester Int?
+
+  filiere_module filiere_module[]
+}
+
+model filiere_module {
+  codef    String   @db.VarChar(20)
+  codem    String   @db.VarChar(20)
+  filieres filieres @relation(fields: [codef], references: [codef], onDelete: Cascade, onUpdate: NoAction)
+  modules  modules  @relation(fields: [codem], references: [codem])
+  @@id([codef, codem])
+}

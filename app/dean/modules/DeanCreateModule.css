@@ -1,0 +1,98 @@
+:root {
+    --primary-color: #315277;
+    --secondary-color: #3498db;
+    --accent-color: #2980b9;
+    --text-color: #333;
+    --light-bg: #f5f8fa;
+    --error-color: #e74c3c;
+    --success-color: #27ae60;
+    --border-radius: 12px;
+    --box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+    --sidebar-width: 250px;
+    --sidebar-collapsed-width: 60px;
+}
+
+.dean-create-module-container {
+    background: var(--light-bg);
+    max-width: 420px;
+    margin: 40px auto;
+    padding: 32px 28px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    color: var(--text-color);
+}
+
+.dean-create-module-container h2 {
+    color: var(--primary-color);
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.dean-create-module-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.dean-create-module-form label {
+    font-weight: 500;
+    color: var(--primary-color);
+    margin-bottom: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.dean-create-module-form input,
+.dean-create-module-form select {
+    padding: 10px 12px;
+    border: 1px solid var(--secondary-color);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    background: #fff;
+    transition: var(--transition);
+    outline: none;
+}
+
+.dean-create-module-form input:focus,
+.dean-create-module-form select:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px var(--secondary-color, #3498db33);
+}
+
+.dean-create-module-form button {
+    background: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    margin-top: 10px;
+}
+
+.dean-create-module-form button:hover {
+    background: var(--accent-color);
+}
+
+.form-message {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: var(--border-radius);
+    font-size: 0.97rem;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.form-message.error {
+    background: var(--error-color);
+    color: #fff;
+}
+
+.form-message.success {
+    background: var(--success-color);
+    color: #fff;
+}

@@ -1,0 +1,182 @@
+:root {
+  --primary-color: #315277;
+  --secondary-color: #3498db;
+  --accent-color: #2980b9;
+  --text-color: #333;
+  --light-bg: #f5f8fa;
+  --error-color: #e74c3c;
+  --success-color: #27ae60;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+}
+
+.sidebar {
+  position: fixed;
+  width: 250px;
+  height: 100vh;
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--secondary-color)
+  );
+  z-index: 1000;
+  box-shadow: var(--box-shadow);
+  display: flex;
+  flex-direction: column;
+  transition: var(--transition);
+  overflow: hidden;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar:not(:hover) {
+  width: 60px;
+}
+
+.sidebar-content {
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.sidebar-header {
+  padding: 0.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: var(--transition);
+}
+
+.sidebar:not(:hover) .sidebar-header {
+  border-bottom: none;
+}
+
+.sidebar-header h2 {
+  color: white;
+  margin: 10px 0;
+  font-size: 1.25rem;
+  opacity: 1;
+  transition: var(--transition);
+}
+
+.sidebar:not(:hover) .sidebar-header h2 {
+  opacity: 0;
+  height: 0;
+  margin: 0;
+}
+
+.menu-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu-list li {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  margin: 0;
+  border-radius: 0;
+  cursor: pointer;
+  transition: var(--transition);
+  color: white;
+}
+
+.sidebar:not(:hover) .menu-list li {
+  justify-content: center;
+  padding: 0.75rem 0;
+  margin: 0;
+  border: none;
+  background: transparent !important;
+}
+
+.menu-icon {
+  min-width: 24px;
+  display: flex;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.menu-text {
+  margin-left: 12px;
+  white-space: nowrap;
+  transition: var(--transition);
+}
+
+.sidebar:not(:hover) .menu-text {
+  opacity: 0;
+  width: 0;
+  margin: 0;
+}
+
+.user-info {
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0.5rem 1rem;
+  margin: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: var(--transition);
+}
+
+.sidebar:not(:hover) .user-info {
+  opacity: 0;
+  height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+}
+
+.logout-button {
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  width: 100%;
+}
+
+.sidebar:not(:hover) .logout-button {
+  background: transparent;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+.logout-text {
+  margin-left: 12px;
+  transition: var(--transition);
+}
+
+.sidebar:not(:hover) .logout-text {
+  opacity: 0;
+  width: 0;
+  margin: 0;
+}
+
+.menu-list li:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+button:hover {
+  background: white;
+  color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 60px;
+  }
+
+  .sidebar:hover {
+    width: 250px;
+  }
+}

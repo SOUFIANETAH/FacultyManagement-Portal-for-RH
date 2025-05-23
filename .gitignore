@@ -9,21 +9,28 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
+.next/
+out/
 # testing
 /coverage
-
+*.log
+npm-debug.log*
 # next.js
 /.next/
 /out/
 
 # production
 /build
-
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 # misc
 .DS_Store
 *.pem
-
+.DS_Store
+Thumbs.db
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -35,7 +42,18 @@ yarn-error.log*
 
 # vercel
 .vercel
-
+.idea/
+.vscode/
+*.iml
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+prisma/migrations/
+
+# Zip or temp files
+*.zip
+*.tmp
+*.swp
+
+# Cache
+.cache/
