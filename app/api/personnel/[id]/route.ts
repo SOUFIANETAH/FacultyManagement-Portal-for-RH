@@ -27,15 +27,17 @@ export async function GET(
         const person = await prisma.personne.findFirst({
             where: {
                 idp: id,
+                // Ensure they have a personnel record
                 personnels: {
-                    isNot: null // Only personnel
+                    some: {}
                 }
             },
             include: {
                 personnels: {
                     select: {
                         fonction: true,
-                        specialite: true
+                        specialite: true,
+                        idpersonnel: true
                     }
                 },
                 personne_role: {
@@ -79,9 +81,20 @@ export async function GET(
             );
         }
 
-        // Add type information
+        // Convert photo (Bytes) to base64 string if it exists
+        let photoBase64 = null;
+        if (person.photo) {
+            try {
+                photoBase64 = Buffer.from(person.photo).toString('base64');
+            } catch (error) {
+                console.warn('Error converting photo to base64:', error);
+            }
+        }
+
+        // Add type information and photo
         const result = {
             ...person,
+            photo: photoBase64, // Replace raw bytes with base64 string
             isPersonnel: true,
             isStudent: false,
             type: 'personnel'

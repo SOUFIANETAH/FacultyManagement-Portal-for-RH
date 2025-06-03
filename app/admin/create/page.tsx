@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, {useEffect, useState} from "react";
 import styles from './create.module.css';
+import {router} from "next/client";
+import {useSession} from "next-auth/react";
 
 export default function CreerUtil() {
     const [formData, setFormData] = useState({
@@ -20,7 +22,13 @@ export default function CreerUtil() {
     });
     const [loading, setLoading] = useState(false);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
-
+    const { data: session, status , } = useSession();
+    useEffect(() => {
+        if (status === "unauthenticated") {
+            router.push("/login");
+            return;
+        }
+    }, [status, session, router]);
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({

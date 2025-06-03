@@ -16,8 +16,8 @@ A modern faculty management web application built with **Next.js**, **Prisma**, 
 - **Backend**: Next.js API routes
 - **ORM**: Prisma
 - **Database**: PostgreSQL
-- **Authentication**: (e.g. NextAuth.js, if used)
-- **Deployment**: (e.g. Vercel or other)
+- **Authentication**:
+- **Deployment**: 
 
 ## 📦 Installation
 
@@ -28,4 +28,4 @@ A modern faculty management web application built with **Next.js**, **Prisma**, 
 
 
 ## ⚠️ Disclaimer
-The logo used in this project (located in `/public/uploads/logo-2.png`) is the property of [Your University Name]. It is included here for demonstration purposes only. **You are not permitted to use, reproduce, or distribute this logo** in any form without official permission from the university.
+The logo used in this project (located in `/public/uploads/logo-2.png`) is the property of [UMI]. It is included here for demonstration purposes only. **You are not permitted to use, reproduce, or distribute this logo** in any form without official permission from the university.

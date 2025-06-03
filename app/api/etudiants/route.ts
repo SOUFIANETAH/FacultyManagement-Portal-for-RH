@@ -3,6 +3,21 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// Function to calculate mention based on average
+function calculateMention(moyenne: number): string {
+  if (moyenne >= 16) {
+    return 'Très Bien';
+  } else if (moyenne >= 14) {
+    return 'Bien';
+  } else if (moyenne >= 12) {
+    return 'Assez Bien';
+  } else if (moyenne >= 10) {
+    return 'Passable';
+  } else {
+    return 'Insuffisant';
+  }
+}
+
 export async function GET() {
   try {
     // Requête complète pour récupérer toutes les informations des étudiants
@@ -53,6 +68,27 @@ export async function GET() {
       // Compter le nombre de modules validés (nombre total de date_val records)
       const nbModulesValides = dateValRecords.length;
 
+      // Calculer la moyenne générale de tous les modules
+      let moyenneGenerale: number | null = null;
+      let mentionCalculee: string | null = null;
+
+      if (dateValRecords.length > 0) {
+        // Filtrer les moyennes valides (non nulles)
+        const moyennesValides = dateValRecords
+            .map(record => record.moyenne)
+            .filter((moyenne): moyenne is number => moyenne !== null)
+            .map(moyenne => Number(moyenne));
+
+        if (moyennesValides.length > 0) {
+          // Calculer la moyenne générale
+          const somme = moyennesValides.reduce((acc, moyenne) => acc + moyenne, 0);
+          moyenneGenerale = Math.round((somme / moyennesValides.length) * 100) / 100; // Arrondir à 2 décimales
+
+          // Calculer la mention basée sur la moyenne générale
+          mentionCalculee = calculateMention(moyenneGenerale);
+        }
+      }
+
       return {
         idp: personne.idp,
         nom: personne.nom,
@@ -72,8 +108,8 @@ export async function GET() {
         date_val: latestDateVal?.date_val
             ? new Date(latestDateVal.date_val).toLocaleDateString('fr-FR')
             : null,
-        moyenne: latestDateVal?.moyenne ? Number(latestDateVal.moyenne) : null,
-        mention: latestDateVal?.mention || null,
+        moyenne: moyenneGenerale, // Moyenne calculée de tous les modules
+        mention: mentionCalculee, // Mention calculée basée sur la moyenne générale
         nbMV: nbModulesValides, // Nombre de modules validés
         codem: latestDateVal?.codem || null,
       };

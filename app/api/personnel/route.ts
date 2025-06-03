@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
         // Build where clause - only include personnel (not students)
         const whereClause: any = {
             personnels: {
-                isNot: null // Ensure they are personnel
+                some: {} // Must have at least one personnel record
             }
         };
 
@@ -48,7 +48,8 @@ export async function GET(request: NextRequest) {
                     personnels: {
                         select: {
                             fonction: true,
-                            specialite: true
+                            specialite: true,
+                            idpersonnel: true
                         }
                     },
                     personne_role: {
@@ -66,7 +67,6 @@ export async function GET(request: NextRequest) {
                             }
                         }
                     }
-                    // Removed etudiants include
                 },
                 skip,
                 take: limit,
@@ -80,8 +80,28 @@ export async function GET(request: NextRequest) {
             })
         ]);
 
+        // Convert photos to base64 for each personnel
+        const personnelWithPhotos = personnel.map(person => {
+            let photoBase64 = null;
+            if (person.photo) {
+                try {
+                    photoBase64 = Buffer.from(person.photo).toString('base64');
+                } catch (error) {
+                    console.warn('Error converting photo to base64 for person:', person.idp, error);
+                }
+            }
+
+            return {
+                ...person,
+                photo: photoBase64,
+                isPersonnel: true,
+                isStudent: false,
+                type: 'personnel'
+            };
+        });
+
         return NextResponse.json({
-            data: personnel,
+            data: personnelWithPhotos,
             pagination: {
                 page,
                 limit,

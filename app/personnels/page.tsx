@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, User, Phone, Mail, MapPin, Calendar, Briefcase, Award, Building } from 'lucide-react';
+import { Search, User, Phone, Mail, MapPin, Calendar, Briefcase, Award, Building, ImageIcon } from 'lucide-react';
 import "./pers.css";
 
 interface PersonnelData {
@@ -14,10 +14,11 @@ interface PersonnelData {
   date_nai?: string;
   email?: string;
   tele?: string;
-  photo?: string;
+  photo?: string; // base64 string
   personnels?: {
     fonction?: string;
     specialite?: string;
+    idpersonnel?: number;
   };
   personne_role?: Array<{
     role: string;
@@ -86,13 +87,15 @@ export default function PersonnelPage() {
       const response = await fetch(`/api/personnel/${person.idp}`);
 
       if (!response.ok) {
-        throw new Error('Échec du chargement des données détaillées');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Échec du chargement des données détaillées');
       }
 
       const detailedData = await response.json();
       setPersonData(detailedData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors du chargement des détails');
+      console.error('Detail fetch error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -116,6 +119,43 @@ export default function PersonnelPage() {
         </div>
       </div>
   );
+
+  const PhotoDisplay = ({ photo, nom, prenom }: { photo?: string; nom: string; prenom: string }) => {
+    if (photo) {
+      return (
+          <img
+              src={`data:image/jpeg;base64,${photo}`}
+              alt={`Photo de ${prenom} ${nom}`}
+              className="person-photo"
+              style={{
+                width: '120px',
+                height: '120px',
+                borderRadius: '8px',
+                objectFit: 'cover',
+                border: '2px solid #e5e7eb'
+              }}
+          />
+      );
+    }
+
+    return (
+        <div
+            className="person-photo-placeholder"
+            style={{
+              width: '120px',
+              height: '120px',
+              borderRadius: '8px',
+              backgroundColor: '#f3f4f6',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px solid #e5e7eb'
+            }}
+        >
+          <ImageIcon size={40} color="#9ca3af" />
+        </div>
+    );
+  };
 
   return (
       <div className="container">
@@ -170,9 +210,11 @@ export default function PersonnelPage() {
                         onClick={() => handleSelectPerson(person)}
                     >
                       <div className="result-icon-container">
-                        <div className="result-icon personnel">
-                          <Briefcase className="icon" />
-                        </div>
+                        <PhotoDisplay
+                            photo={person.photo}
+                            nom={person.nom}
+                            prenom={person.prenom}
+                        />
                       </div>
                       <div className="result-details">
                         <h3>{person.prenom} {person.nom}</h3>
@@ -197,10 +239,12 @@ export default function PersonnelPage() {
             <div className="person-details">
               <div className="person-header">
                 <div className="person-identity">
-                  <div className="person-icon personnel">
-                    <Briefcase className="icon" />
-                  </div>
-                  <div>
+                  <PhotoDisplay
+                      photo={personData.photo}
+                      nom={personData.nom}
+                      prenom={personData.prenom}
+                  />
+                  <div style={{ marginLeft: '20px' }}>
                     <h2>{personData.prenom} {personData.nom}</h2>
                     <p>{personData.personnels?.fonction || 'Personnel'}</p>
                     <span className="type-badge personnel">
@@ -220,6 +264,7 @@ export default function PersonnelPage() {
                         setPersonData(null);
                         setSearchQuery('');
                         setShowResults(false);
+                        setError(null);
                       }}
                       className="action-button"
                   >
@@ -274,7 +319,7 @@ export default function PersonnelPage() {
         )}
 
         {/* Initial State */}
-        {!personData && !showResults && !isLoading && (
+        {!personData && !showResults && !isLoading && !error && (
             <div className="instructions">
               <Briefcase className="icon-large" />
               <h3>Rechercher un membre du personnel</h3>

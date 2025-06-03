@@ -16,7 +16,7 @@ export default function DemandeCompte() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
     const [role, setRole] = useState("user");
-    const [department, setDepartment] = useState(""); // fixed from departement
+    const [department, setDepartment] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
 
@@ -26,8 +26,27 @@ export default function DemandeCompte() {
         setError("");
         setMessage(null);
 
+        // Client-side validation
         if (password !== confirmPassword) {
             setError("Les mots de passe ne correspondent pas.");
+            setIsLoading(false);
+            return;
+        }
+
+        if (password.length < 6) {
+            setError("Le mot de passe doit contenir au moins 6 caractères.");
+            setIsLoading(false);
+            return;
+        }
+
+        if (!cin || cin.length < 5) {
+            setError("Veuillez entrer un CIN valide.");
+            setIsLoading(false);
+            return;
+        }
+
+        if (!telephone || telephone.length < 10) {
+            setError("Veuillez entrer un numéro de téléphone valide.");
             setIsLoading(false);
             return;
         }
@@ -57,24 +76,33 @@ export default function DemandeCompte() {
                     adr: address,
                     ville: city,
                     tele: telephone,
-                    photo: null, // Initialize photo property as null
+                    photo: null,
                 }
             };
 
             // Handle photo if provided
             if (photo) {
+                // Validate file size (max 5MB)
+                if (photo.size > 5 * 1024 * 1024) {
+                    setError("La photo ne doit pas dépasser 5MB.");
+                    setIsLoading(false);
+                    return;
+                }
+
+                // Validate file type
+                if (!photo.type.startsWith('image/')) {
+                    setError("Veuillez sélectionner un fichier image valide.");
+                    setIsLoading(false);
+                    return;
+                }
+
                 const reader = new FileReader();
                 reader.readAsDataURL(photo);
 
                 reader.onload = async () => {
-                    // Remove the data:image/jpeg;base64, prefix
                     const base64String = reader.result as string;
                     const base64Data = base64String.split(',')[1];
-
-
                     requestData.personData.photo = base64Data;
-
-                    // Send the request
                     await sendRequest(requestData);
                 };
 
@@ -102,11 +130,15 @@ export default function DemandeCompte() {
                 body: JSON.stringify(requestData),
             });
 
+            const responseData = await response.json();
+
             if (!response.ok) {
-                throw new Error("Échec de la demande de compte.");
+                throw new Error(responseData.error || "Échec de la demande de compte.");
             }
 
-            setMessage("Votre demande de compte a été envoyée avec succès.");
+            setMessage("🎉 Votre demande de compte a été envoyée avec succès! Vous recevrez une notification une fois qu'elle sera traitée.");
+
+            // Reset form
             setFirstName("");
             setLastName("");
             setCin("");
@@ -121,57 +153,81 @@ export default function DemandeCompte() {
             setDepartment("");
             setRole("user");
 
-            // Optionally clear message after delay
-            setTimeout(() => setMessage(null), 5000);
-        } catch (error) {
+            // Clear message after delay
+            setTimeout(() => setMessage(null), 8000);
+        } catch (error: any) {
             console.error("Erreur lors de l'envoi de la demande :", error);
-            setError("Une erreur est survenue lors de la demande.");
+            setError(error.message || "Une erreur est survenue lors de la demande.");
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const formatPhoneNumber = (value: string) => {
+        // Remove all non-digit characters
+        const digits = value.replace(/\D/g, '');
+
+        // Format as XX XX XX XX XX for Moroccan numbers
+        if (digits.length <= 10) {
+            return digits.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
+        }
+        return digits.slice(0, 10).replace(/(\d{2})(?=\d)/g, '$1 ').trim();
+    };
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const formatted = formatPhoneNumber(e.target.value);
+        setTelephone(formatted);
     };
 
     return (
         <div className="register-container">
             <div className="register-card">
                 <h1>Demande de Compte</h1>
+                <p style={{ textAlign: 'center', color: 'var(--gray-600)', marginBottom: '2rem' }}>
+                    Veuillez remplir tous les champs pour soumettre votre demande
+                </p>
+
                 <form onSubmit={handleSubmit} className="register-form">
                     <div className="form-row">
                         <div className="form-group">
-                            <label htmlFor="lastName">Nom</label>
+                            <label htmlFor="lastName">Nom *</label>
                             <input
                                 id="lastName"
                                 type="text"
                                 value={lastName}
                                 onChange={(e) => setLastName(e.target.value)}
                                 required
+                                placeholder="Entrez votre nom"
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="firstName">Prénom</label>
+                            <label htmlFor="firstName">Prénom *</label>
                             <input
                                 id="firstName"
                                 type="text"
                                 value={firstName}
                                 onChange={(e) => setFirstName(e.target.value)}
                                 required
+                                placeholder="Entrez votre prénom"
                             />
                         </div>
                     </div>
 
                     <div className="form-row">
                         <div className="form-group">
-                            <label htmlFor="cin">CIN</label>
+                            <label htmlFor="cin">CIN *</label>
                             <input
                                 id="cin"
                                 type="text"
                                 value={cin}
-                                onChange={(e) => setCin(e.target.value)}
+                                onChange={(e) => setCin(e.target.value.toUpperCase())}
                                 required
+                                placeholder="Ex: AB123456"
+                                maxLength={8}
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="dateOfBirth">Date de naissance</label>
+                            <label htmlFor="dateOfBirth">Date de naissance *</label>
                             <input
                                 id="dateOfBirth"
                                 type="date"
@@ -184,80 +240,57 @@ export default function DemandeCompte() {
 
                     <div className="form-row">
                         <div className="form-group">
-                            <label htmlFor="address">Adresse</label>
+                            <label htmlFor="address">Adresse *</label>
                             <input
                                 id="address"
                                 type="text"
                                 value={address}
                                 onChange={(e) => setAddress(e.target.value)}
                                 required
+                                placeholder="Entrez votre adresse"
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="city">Ville</label>
+                            <label htmlFor="city">Ville *</label>
                             <input
                                 id="city"
                                 type="text"
                                 value={city}
                                 onChange={(e) => setCity(e.target.value)}
                                 required
+                                placeholder="Entrez votre ville"
                             />
                         </div>
                     </div>
 
                     <div className="form-row">
                         <div className="form-group">
-                            <label htmlFor="telephone">Téléphone</label>
+                            <label htmlFor="telephone">Téléphone *</label>
                             <input
                                 id="telephone"
-                                type="tel"
+                                type="text"
                                 value={telephone}
-                                onChange={(e) => setTelephone(e.target.value)}
+                                onChange={handlePhoneChange}
                                 required
+                                placeholder="06 12 34 56 78"
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="photo">Photo</label>
-                            <input
-                                id="photo"
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => setPhoto(e.target.files ? e.target.files[0] : null)}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="email">Email</label>
+                            <label htmlFor="email">Email *</label>
                             <input
                                 id="email"
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
+                                placeholder="exemple@email.com"
                             />
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="department">Département</label>
-                            <select
-                                id="department"
-                                value={department}
-                                onChange={(e) => setDepartment(e.target.value)}
-                                required
-                            >
-                                <option value="">Sélectionner un département</option>
-                                <option value="Info">Info</option>
-                                <option value="Mathematics">Mathématiques</option>
-                                <option value="Physics">Physique</option>
-                                <option value="Administration">Administration</option>
-                            </select>
                         </div>
                     </div>
 
                     <div className="form-row">
                         <div className="form-group">
-                            <label htmlFor="password">Mot de passe</label>
+                            <label htmlFor="password">Mot de passe *</label>
                             <input
                                 id="password"
                                 type="password"
@@ -267,7 +300,7 @@ export default function DemandeCompte() {
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="confirmPassword">Confirmer</label>
+                            <label htmlFor="confirmPassword">Confirmer le mot de passe *</label>
                             <input
                                 id="confirmPassword"
                                 type="password"
@@ -280,27 +313,45 @@ export default function DemandeCompte() {
 
                     <div className="form-row">
                         <div className="form-group">
-                            <label htmlFor="role">Rôle</label>
+                            <label htmlFor="department">Département *</label>
+                            <input
+                                id="department"
+                                type="text"
+                                value={department}
+                                onChange={(e) => setDepartment(e.target.value)}
+                                required
+                                placeholder="Département demandé"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="role">Rôle *</label>
                             <select
                                 id="role"
                                 value={role}
                                 onChange={(e) => setRole(e.target.value)}
-                                required
                             >
                                 <option value="user">Utilisateur</option>
-                                <option value="doyen">Doyen</option>
-                                <option value="vice-doyen">Vice-Doyen</option>
-                                <option value="administration">Administration</option>
+                                <option value="admin">Administrateur</option>
                             </select>
                         </div>
                     </div>
 
-                    <button type="submit" className="submit-btn" disabled={isLoading}>
-                        {isLoading ? "Chargement..." : "Envoyer"}
-                    </button>
+                    <div className="form-group">
+                        <label htmlFor="photo">Photo (facultatif, max 5MB)</label>
+                        <input
+                            id="photo"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setPhoto(e.target.files?.[0] || null)}
+                        />
+                    </div>
 
-                    {error && <div className="error-message">{error}</div>}
-                    {message && <div className="success-message">{message}</div>}
+                    {error && <p className="error-message">{error}</p>}
+                    {message && <p className="success-message">{message}</p>}
+
+                    <button type="submit" className="submit-button" disabled={isLoading}>
+                        {isLoading ? "Envoi en cours..." : "Soumettre la demande"}
+                    </button>
                 </form>
             </div>
         </div>

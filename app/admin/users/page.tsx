@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import "./GU.css";
 import {FaSearch} from "react-icons/fa";
+import {useSession} from "next-auth/react";
+import {router} from "next/client";
 interface User {
     id: number;
     email: string;
@@ -18,7 +20,13 @@ export default function GestionUtil() {
     const [statusMessage, setStatusMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedRoles, setSelectedRoles] = useState<{ [key: number]: string }>({});
-
+    const { data: session, status , } = useSession();
+    useEffect(() => {
+        if (status === "unauthenticated") {
+            router.push("/login");
+            return;
+        }
+    }, [status, session, router]);
     const itemsPerPage = 5;
     useEffect(() => {
         const fetchUsers = async () => {

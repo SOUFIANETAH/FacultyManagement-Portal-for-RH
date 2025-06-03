@@ -43,7 +43,7 @@ export default function AdminDashboard() {
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [requests, setRequests] = useState<Request[]>([]);
     const [loading, setLoading] = useState(true);
-    const { data: session, status } = useSession();
+    const { data: session, status , } = useSession();
     const router = useRouter();
     const [currentRequestPage, setCurrentRequestPage] = useState(1);
     const [currentAlertPage, setCurrentAlertPage] = useState(1);
@@ -52,6 +52,7 @@ export default function AdminDashboard() {
     useEffect(() => {
         if (status === "unauthenticated") {
             router.push("/login");
+            return;
         }
     }, [status, session, router]);
 
@@ -103,10 +104,8 @@ export default function AdminDashboard() {
                 status: "admin_approved",
                 status_admin: "admin_approved",
                 status_user: "ACTIVE",
-                ...(type === "adduser" && status_doyen === "dean_approved" && { action: "create_user" })
+                ...(type === "adduser" && { action: "create_user" }) // Simplified condition
             };
-
-            console.log("Approving request:", payload);
 
             const response = await fetch("/api/requests", {
                 method: "PUT",
@@ -119,26 +118,20 @@ export default function AdminDashboard() {
             if (!response.ok) {
                 const errorData = await response.json();
                 console.error("Error approving request:", errorData);
-                throw new Error(`Request failed: ${errorData.error || response.statusText}`);
+                throw new Error(errorData.error || "Failed to update request");
             }
 
             const result = await response.json();
 
-            if (result.user) {
-                // If a user was created, update the request with the new user ID
-                setRequests(prev => prev.map(req =>
-                    req.id === id ? { ...req, userId: result.user.id } : req
-                ));
-            }
-
             // Remove the request from the list after approval
             setRequests((prev) => prev.filter((req) => req.id !== id));
 
+            return result;
         } catch (error) {
             console.error("Failed to approve request:", error);
+            throw error; // Re-throw to allow error handling in the calling component
         }
     };
-
     const handleReject = async (id: number) => {
         try {
             const response = await fetch("/api/requests", {

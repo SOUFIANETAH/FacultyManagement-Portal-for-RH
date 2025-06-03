@@ -60,7 +60,30 @@ export default function DeanDashboard() {
             .finally(() => setLoading(false));
     }, []);
 
-   
+    const handleApprove = async (id: number, type: string) => {
+        try {
+            const response = await fetch("/api/requests", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    id,
+                    approverRole: "dean",
+                    status: "dean_approved",
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Remove the approved request from the list since we only show pending requests
+            setRequests((prev) => prev.filter((req) => req.id !== id));
+        } catch (error) {
+            console.error("Failed to approve request:", error);
+        }
+    };
 
     const handleReject = async (id: number) => {
         try {

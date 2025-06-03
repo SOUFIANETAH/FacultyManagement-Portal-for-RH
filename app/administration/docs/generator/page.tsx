@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import "./gen.css"
 import { Search, FileText, Download, Plus, Edit, Trash2, User, GraduationCap, Building } from 'lucide-react';
 import jsPDF from 'jspdf';
+import {router} from "next/client";
+import {useSession} from "next-auth/react";
 
 const DocumentGenerator = () => {
     const [activeTab, setActiveTab] = useState('student');
@@ -18,86 +20,87 @@ const DocumentGenerator = () => {
         content: ''
     });
 
-    // Load hardcoded templates
+    // Helper function to handle API responses
+    const handleApiResponse = async (response) => {
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Server returned non-JSON response. Check if API routes are properly configured.');
+        }
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        return await response.json();
+    };
+    const { data: session, status , } = useSession();
     useEffect(() => {
-        setTemplates([
-            {
-                id: 1,
-                type: 'etudiant',
-                title: 'Certificat de Scolarité',
-                content: `CERTIFICAT DE SCOLARITÉ
+        if (status === "unauthenticated") {
+            router.push("/login");
+            return;
+        }
+    }, [status, session, router]);
+    // Load templates from database
+    const loadTemplates = async () => {
+        try {
+            const response = await fetch('/api/document-templates');
+            const data = await handleApiResponse(response);
+            setTemplates(data);
+        } catch (error) {
+            console.error('Error loading templates:', error);
+            // Set some default templates if API fails
+            setTemplates([
+                {
+                    id: 'default-1',
+                    type: 'etudiant',
+                    title: 'Attestation de Scolarité',
+                    content: `ATTESTATION DE SCOLARITÉ
 
-Je soussigné(e), Directeur/Directrice de l'établissement, certifie que :
+Je soussigné(e), certifie que:
 
-Nom : {{nom}}
-Prénom : {{prenom}}
-CNE : {{cne}}
-CIN : {{cin}}
-Date de naissance : {{date_nai}}
-Adresse : {{adr}}
-Ville : {{ville}}
+Nom: {{nom}}
+Prénom: {{prenom}}
+CIN: {{cin}}
+CNE: {{cne}}
 
-Est régulièrement inscrit(e) en {{niveau}} pour l'année universitaire en cours.
-
-Date d'inscription : {{date_insc}}
-Statut : {{statut}}
-
-Ce certificat est délivré pour servir et valoir ce que de droit.
-
-Fait le {{date_actuelle}}`
-            },
-            {
-                id: 2,
-                type: 'etudiant',
-                title: 'Relevé de Notes',
-                content: `RELEVÉ DE NOTES
-
-Établissement : {{etablissement}}
-Département : {{departement}}
-Année universitaire : [Année en cours]
-
-INFORMATIONS ÉTUDIANT :
-Nom : {{nom}}
-Prénom : {{prenom}}
-CNE : {{cne}}
-Niveau : {{niveau}}
-
-RÉSULTATS ACADÉMIQUES :
-{{#notes}}
-Date d'évaluation : {{date_val}}
-Moyenne : {{moyenne}}/20
-Mention : {{mention}}
-
-{{/notes}}
-
-Le Directeur des Études`
-            },
-            {
-                id: 3,
-                type: 'personnel',
-                title: 'Attestation de Travail',
-                content: `ATTESTATION DE TRAVAIL
-
-Je soussigné(e), Directeur/Directrice des Ressources Humaines, atteste que :
-
-Nom : {{nom}}
-Prénom : {{prenom}}
-CIN : {{cin}}
-Ville : {{ville}}
-
-Exerce les fonctions de {{fonction}} dans notre établissement.
-
-Spécialité : {{specialite}}
-Rôles : {{roles}}
-Département : {{departement}}
+Est régulièrement inscrit(e) en {{niveau}} à {{etablissement}}.
+Département: {{departement}}
+Date d'inscription: {{date_inscription}}
+Statut: {{statut}}
 
 Cette attestation est délivrée pour servir et valoir ce que de droit.
 
-Fait le {{date_actuelle}}
+Fait à {{ville}}, le {{date_actuelle}}`
+                },
+                {
+                    id: 'default-2',
+                    type: 'personnel',
+                    title: 'Attestation de Travail',
+                    content: `ATTESTATION DE TRAVAIL
 
-Le Directeur des Ressources Humaines`
-            }
-        ]);
+Je soussigné(e), certifie que:
+
+Nom: {{nom}}
+Prénom: {{prenom}}
+CIN: {{cin}}
+
+Travaille à {{etablissement}} en qualité de {{fonction}}.
+Département: {{departement}}
+Spécialité: {{specialite}}
+Rôles: {{roles}}
+
+Cette attestation est délivrée pour servir et valoir ce que de droit.
+
+Fait à {{ville}}, le {{date_actuelle}}`
+                }
+            ]);
+            alert('Impossible de charger les modèles depuis la base de données. Utilisation des modèles par défaut.');
+        }
+    };
+
+    useEffect(() => {
+        loadTemplates();
     }, []);
 
     const searchPerson = async () => {
@@ -112,24 +115,49 @@ Le Directeur des Ressources Humaines`
                 response = await fetch(`/api/documents/personnel/${searchId}`);
             }
 
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                    setSelectedPerson(result.data);
-                    setDocuments([]); // Clear previous documents
-                } else {
-                    alert(result.error || 'Personne non trouvée');
-                    setSelectedPerson(null);
-                }
+            const result = await handleApiResponse(response);
+
+            if (result.success) {
+                setSelectedPerson(result.data);
+                setDocuments([]); // Clear previous documents
             } else {
-                const errorData = await response.json();
-                alert(errorData.error || 'Personne non trouvée');
+                alert(result.error || 'Personne non trouvée');
                 setSelectedPerson(null);
             }
         } catch (error) {
-            console.error('Erreur:', error);
-            alert('Erreur lors de la recherche');
-            setSelectedPerson(null);
+            console.error('Erreur lors de la recherche:', error);
+
+            // For demo purposes, create mock data if API fails
+            if (activeTab === 'student') {
+                setSelectedPerson({
+                    nom: 'Dupont',
+                    prenom: 'Jean',
+                    cin: 'AB123456',
+                    email: 'jean.dupont@email.com',
+                    ville: 'Casablanca',
+                    cne: searchId,
+                    niveau: 'Master 2',
+                    statut: 'Actif',
+                    date_inscription: '2023-09-15',
+                    departement: 'Informatique',
+                    etablissement: 'École Nationale Supérieure'
+                });
+                alert('API non disponible. Utilisation de données de démonstration.');
+            } else {
+                setSelectedPerson({
+                    nom: 'Martin',
+                    prenom: 'Marie',
+                    cin: 'CD789012',
+                    email: 'marie.martin@ecole.ma',
+                    ville: 'Rabat',
+                    fonction: 'Professeur',
+                    specialite: 'Mathématiques',
+                    roles: 'Enseignant-Chercheur',
+                    departement: 'Sciences',
+                    etablissement: 'École Nationale Supérieure'
+                });
+                alert('API non disponible. Utilisation de données de démonstration.');
+            }
         } finally {
             setLoading(false);
         }
@@ -257,28 +285,61 @@ Le Directeur des Ressources Humaines`
             return;
         }
 
-        // Add to local templates array
-        const newId = Math.max(...templates.map(t => t.id), 0) + 1;
-        const templateToAdd = {
-            ...newTemplate,
-            id: newId
-        };
+        try {
+            const response = await fetch('/api/document-templates', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newTemplate),
+            });
 
-        setTemplates([...templates, templateToAdd]);
-        setNewTemplate({ type: 'etudiant', title: '', content: '' });
-        setShowTemplateForm(false);
+            const savedTemplate = await handleApiResponse(response);
+
+            // Reload templates to get the updated list
+            await loadTemplates();
+
+            // Reset form
+            setNewTemplate({ type: 'etudiant', title: '', content: '' });
+            setShowTemplateForm(false);
+
+            alert('Modèle créé avec succès!');
+        } catch (error) {
+            console.error('Error saving template:', error);
+
+            // For demo purposes, add template locally if API fails
+            const newId = Date.now().toString();
+            const localTemplate = { ...newTemplate, id: newId };
+            setTemplates(prev => [...prev, localTemplate]);
+
+            // Reset form
+            setNewTemplate({ type: 'etudiant', title: '', content: '' });
+            setShowTemplateForm(false);
+
+            alert('API non disponible. Modèle ajouté localement pour cette session.');
+        }
     };
 
-    const deleteTemplate = (templateId) => {
-        // Only allow deletion of user-created templates (id > 3)
-        if (templateId <= 3) {
-            alert('Impossible de supprimer les modèles par défaut');
-            return;
-        }
-
+    const deleteTemplate = async (templateId) => {
         if (!confirm('Êtes-vous sûr de vouloir supprimer ce modèle ?')) return;
 
-        setTemplates(templates.filter(t => t.id !== templateId));
+        try {
+            const response = await fetch(`/api/document-templates/${templateId}`, {
+                method: 'DELETE',
+            });
+
+            await handleApiResponse(response);
+
+            // Reload templates to get the updated list
+            await loadTemplates();
+            alert('Modèle supprimé avec succès!');
+        } catch (error) {
+            console.error('Error deleting template:', error);
+
+            // For demo purposes, remove template locally if API fails
+            setTemplates(prev => prev.filter(t => t.id !== templateId));
+            alert('API non disponible. Modèle supprimé localement pour cette session.');
+        }
     };
 
     const filteredTemplates = templates.filter(t =>
@@ -485,15 +546,13 @@ Pour le personnel: {{fonction}}, {{specialite}}, {{roles}}"
                                         <div className="flex justify-between items-start mb-3">
                                             <h3 className="font-semibold text-gray-900">{template.title}</h3>
                                             <div className="flex space-x-1">
-                                                {template.id > 3 && (
-                                                    <button
-                                                        onClick={() => deleteTemplate(template.id)}
-                                                        className="text-red-600 hover:text-red-800 p-1"
-                                                        title="Supprimer le modèle"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                )}
+                                                <button
+                                                    onClick={() => deleteTemplate(template.id)}
+                                                    className="text-red-600 hover:text-red-800 p-1"
+                                                    title="Supprimer le modèle"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
                                             </div>
                                         </div>
 

@@ -110,12 +110,7 @@ const Navbar = () => {
               </ul>
             </li>
 
-            <li className={`navbar-item ${isActive('/about') ? 'active' : ''}`}>
-              <Link href="/about" className="navbar-link">
-                <FiInfo className="nav-icon" />
-                <span>About</span>
-              </Link>
-            </li>
+           
 
             <li className={`navbar-item dropdown ${activeDropdown === 'events' ? 'dropdown-active' : ''}`}>
               <div 

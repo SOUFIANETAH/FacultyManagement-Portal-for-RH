@@ -113,12 +113,6 @@ export async function PUT(request: Request) {
                 );
             }
 
-            // No need to check for existing person at dean approval stage
-            // The person will be created during admin approval if needed
-            if (status === "dean_approved" && accountRequest.type === "adduser") {
-                // Just approve the request, no additional checks needed
-            }
-
             updateData = {
                 status_doyen: status,
                 ...(status === "dean_approved" ? {
@@ -166,46 +160,110 @@ export async function PUT(request: Request) {
             const userData = accountRequest.userData as any;
             const personData = accountRequest.personData as any;
 
-            // Always create a new person record
-            const newPerson = await prisma.personne.create({
-                data: {
-                    nom: personData.nom,
-                    prenom: personData.prenom,
-                    cin: personData.cin,
-                    date_nai: personData.date_nai ? new Date(personData.date_nai) : null,
-                    email: personData.email,
-                    adr: personData.adr,
-                    ville: personData.ville,
-                    tele: personData.tele,
-                    photo: personData.photo ? Buffer.from(personData.photo, 'base64') : null,
+            try {
+                // Create person record first
+                const newPerson = await prisma.personne.create({
+                    data: {
+                        nom: personData.nom,
+                        prenom: personData.prenom,
+                        cin: personData.cin,
+                        date_nai: personData.date_nai ? new Date(personData.date_nai) : null,
+                        email: personData.email,
+                        adr: personData.adr,
+                        ville: personData.ville,
+                        tele: personData.tele,
+                        photo: personData.photo ? Buffer.from(personData.photo, 'base64') : null,
+                    }
+                });
+
+                const personId = newPerson.idp;
+
+                // Create user record
+                const newUser = await prisma.user.create({
+                    data: {
+                        name: userData.name,
+                        email: userData.email,
+                        password: userData.password,
+                        role: userData.role,
+                        department: userData.department,
+                        status: "ACTIVE",
+                        personneId: personId
+                    },
+                });
+
+                // Create personnel record if the role is not 'user' (assuming non-users are personnel)
+                if (userData.role !== 'user') {
+                    await prisma.personnels.create({
+                        data: {
+                            idp: personId,
+                            fonction: getFunctionFromRole(userData.role),
+                            specialite: userData.department || null,
+                        }
+                    });
                 }
-            });
-            const personId = newPerson.idp;
 
-            const newUser = await prisma.user.create({
-                data: {
-                    name: userData.name,
-                    email: userData.email,
-                    password: userData.password,
-                    role: userData.role,
-                    department: userData.department,
-                    status: "ACTIVE",
-                    personneId: personId
-                },
-            });
+                // Create person-department relationship
+                if (userData.department) {
+                    const departmentCode = getDepartmentCode(userData.department);
+                    if (departmentCode) {
+                        try {
+                            await prisma.personne_departement.create({
+                                data: {
+                                    idp: personId,
+                                    coded: departmentCode
+                                }
+                            });
+                        } catch (deptError) {
+                            console.warn("Could not create department relationship:", deptError);
+                        }
+                    }
+                }
 
-            await prisma.requests.update({
-                where: { id },
-                data: {
-                    userId: newUser.id,
-                },
-            });
+                // Create person-role relationship
+                await prisma.personne_role.create({
+                    data: {
+                        idp: personId,
+                        role: userData.role
+                    }
+                });
 
-            return NextResponse.json({
-                message: "Account approved and user created",
-                request: updatedRequest,
-                user: { id: newUser.id, email: newUser.email, role: newUser.role },
-            });
+                // Update request with user ID
+                await prisma.requests.update({
+                    where: { id },
+                    data: {
+                        userId: newUser.id,
+                    },
+                });
+
+                return NextResponse.json({
+                    message: "Account approved and user created successfully",
+                    request: updatedRequest,
+                    user: {
+                        id: newUser.id,
+                        email: newUser.email,
+                        role: newUser.role,
+                        personId: personId
+                    },
+                });
+
+            } catch (creationError) {
+                console.error("Error creating user records:", creationError);
+
+                // Rollback the request status update
+                await prisma.requests.update({
+                    where: { id },
+                    data: {
+                        status_admin: "pending",
+                        status: "dean_approved",
+                        UserStatus: "APPROVED_BY_DEAN"
+                    },
+                });
+
+                return NextResponse.json(
+                    { error: "Failed to create user account. Please try again." },
+                    { status: 500 }
+                );
+            }
         }
 
         return NextResponse.json(updatedRequest);
@@ -216,4 +274,25 @@ export async function PUT(request: Request) {
             { status: 500 }
         );
     }
+}
+
+
+function getFunctionFromRole(role: string): string {
+    const roleMap: { [key: string]: string } = {
+        'doyen': 'Doyen',
+        'vice-doyen': 'Vice-Doyen',
+        'administration': 'Personnel Administratif',
+    };
+    return roleMap[role] || 'Personnel';
+}
+
+// Helper function to map department names to codes
+function getDepartmentCode(department: string): string | null {
+    const deptMap: { [key: string]: string } = {
+        'Info': 'INFO',
+        'Mathematics': 'MATH',
+        'Physics': 'PHYS',
+        'Administration': 'ADMIN'
+    };
+    return deptMap[department] || null;
 }

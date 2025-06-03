@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       personData,
     } = await request.json();
 
-    const validTypes = ["register", "adduser", "deleteuser", "updateuser"];
+    const validTypes = ["register", "adduser", "deleteuser", "updateuser", "announcement"];
 
     if (!validTypes.includes(type)) {
       return NextResponse.json(
@@ -100,8 +100,9 @@ export async function PUT(request: Request) {
       );
     }
 
-    let updateData = {};
+    let updateData: any = {};
 
+    // Handle dean approval
     if (approverRole === "dean") {
       if (!["dean_approved", "dean_rejected"].includes(status)) {
         return NextResponse.json(
@@ -112,16 +113,12 @@ export async function PUT(request: Request) {
 
       updateData = {
         status_doyen: status,
-        ...(status === "dean_approved" ? {
-          status: "dean_approved",
-          status_user: "PENDING"
-        } : {
-          status: "dean_rejected",
-          status_user: "REJECTED"
-        })
+        status: status === "dean_approved" ? "dean_approved" : "dean_rejected"
       };
+    }
 
-    } else if (approverRole === "admin") {
+    // Handle admin approval
+    if (approverRole === "admin") {
       if (!["admin_approved", "admin_rejected"].includes(status)) {
         return NextResponse.json(
             { error: "Invalid status for admin" },
@@ -129,7 +126,10 @@ export async function PUT(request: Request) {
         );
       }
 
-      if (status === "admin_approved" && accountRequest.status_doyen !== "dean_approved") {
+      // For admin approval, require dean approval first for adduser requests
+      if (status === "admin_approved" &&
+          accountRequest.type === "adduser" &&
+          accountRequest.status_doyen !== "dean_approved") {
         return NextResponse.json(
             { error: "Request needs dean approval first" },
             { status: 400 }
@@ -142,11 +142,22 @@ export async function PUT(request: Request) {
         status_user: status === "admin_approved" ? "ACTIVE" : "REJECTED"
       };
 
-      if (status === "admin_approved" && accountRequest.type === "adduser" && action === "create_user") {
+      // Handle user creation if this is an adduser request
+      if (status === "admin_approved" &&
+          accountRequest.type === "adduser" &&
+          action === "create_user") {
+
         const userData = accountRequest.userData as any;
         const personData = accountRequest.personData as any;
 
-        // Always create a new person record
+        if (!userData || !personData) {
+          return NextResponse.json(
+              { error: "Missing user or person data" },
+              { status: 400 }
+          );
+        }
+
+        // Create person record
         const newPerson = await prisma.personne.create({
           data: {
             nom: personData.nom,
@@ -160,8 +171,8 @@ export async function PUT(request: Request) {
             photo: personData.photo ? Buffer.from(personData.photo, 'base64') : null,
           }
         });
-        const personId = newPerson.idp;
 
+        // Create user record
         const newUser = await prisma.user.create({
           data: {
             name: userData.name,
@@ -170,28 +181,88 @@ export async function PUT(request: Request) {
             role: userData.role,
             department: userData.department,
             status: "ACTIVE",
-            personneId: personId
+            personneId: newPerson.idp
           },
         });
 
-        await prisma.requests.update({
-          where: { id },
-          data: {
-            userId: newUser.id,
-          },
-        });
-
-        return NextResponse.json({
-          message: "Account approved and user created",
-          request: accountRequest,
-          user: { id: newUser.id, email: newUser.email, role: newUser.role },
-        });
+        // Update request with user ID
+        updateData.userId = newUser.id;
       }
-    } else {
-      return NextResponse.json(
-          { error: "Invalid approver role" },
-          { status: 400 }
-      );
+
+      // Handle user deletion if this is a deleteuser request
+      if (status === "admin_approved" &&
+          accountRequest.type === "deleteuser" &&
+          action === "delete_user") {
+
+        if (accountRequest.userId) {
+          const userToDelete = await prisma.user.findUnique({
+            where: { id: accountRequest.userId },
+            include: { personne: true }
+          });
+
+          if (userToDelete) {
+            // Delete user first (due to foreign key constraints)
+            await prisma.user.delete({
+              where: { id: accountRequest.userId }
+            });
+
+            // Delete associated person record if exists
+            if (userToDelete.personneId) {
+              await prisma.personne.delete({
+                where: { idp: userToDelete.personneId }
+              });
+            }
+          }
+        }
+      }
+
+      // Handle user update if this is an updateuser request
+      if (status === "admin_approved" &&
+          accountRequest.type === "updateuser" &&
+          action === "update_user") {
+
+        const userData = accountRequest.userData as any;
+        const personData = accountRequest.personData as any;
+
+        if (accountRequest.userId) {
+          const userToUpdate = await prisma.user.findUnique({
+            where: { id: accountRequest.userId },
+            include: { personne: true }
+          });
+
+          if (userToUpdate) {
+            // Update user record
+            await prisma.user.update({
+              where: { id: accountRequest.userId },
+              data: {
+                name: userData?.name || userToUpdate.name,
+                email: userData?.email || userToUpdate.email,
+                role: userData?.role || userToUpdate.role,
+                department: userData?.department || userToUpdate.department,
+                ...(userData?.password && { password: userData.password })
+              }
+            });
+
+            // Update person record if exists
+            if (userToUpdate.personneId && personData) {
+              await prisma.personne.update({
+                where: { idp: userToUpdate.personneId },
+                data: {
+                  nom: personData.nom || userToUpdate.personne?.nom,
+                  prenom: personData.prenom || userToUpdate.personne?.prenom,
+                  cin: personData.cin || userToUpdate.personne?.cin,
+                  date_nai: personData.date_nai ? new Date(personData.date_nai) : userToUpdate.personne?.date_nai,
+                  email: personData.email || userToUpdate.personne?.email,
+                  adr: personData.adr || userToUpdate.personne?.adr,
+                  ville: personData.ville || userToUpdate.personne?.ville,
+                  tele: personData.tele || userToUpdate.personne?.tele,
+                  ...(personData.photo && { photo: Buffer.from(personData.photo, 'base64') })
+                }
+              });
+            }
+          }
+        }
+      }
     }
 
     const updatedRequest = await prisma.requests.update({

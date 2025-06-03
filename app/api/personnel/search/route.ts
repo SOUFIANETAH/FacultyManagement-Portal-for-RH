@@ -18,22 +18,69 @@ export async function GET(request: NextRequest) {
 
         const trimmedQuery = query.trim();
 
-        let person = null;
+        console.log('Searching personnel with query:', trimmedQuery);
 
-        console.log('Searching personnel by CIN:', trimmedQuery);
-        // 1. Try exact match by CIN (only personnel)
-        person = await prisma.personne.findFirst({
+        // Search for personnel with multiple strategies
+        const personnel = await prisma.personne.findMany({
             where: {
-                cin: trimmedQuery,
-                personnels: {
-                    some: {} // Must have at least one personnel relation
-                }
+                AND: [
+                    // Must have personnel record
+                    {
+                        personnels: {
+                            some: {}
+                        }
+                    },
+                    // Search criteria
+                    {
+                        OR: [
+                            // Exact matches (higher priority)
+                            {
+                                cin: {
+                                    equals: trimmedQuery,
+                                    mode: 'insensitive'
+                                }
+                            },
+                            {
+                                email: {
+                                    equals: trimmedQuery,
+                                    mode: 'insensitive'
+                                }
+                            },
+                            // Partial matches
+                            {
+                                nom: {
+                                    contains: trimmedQuery,
+                                    mode: 'insensitive'
+                                }
+                            },
+                            {
+                                prenom: {
+                                    contains: trimmedQuery,
+                                    mode: 'insensitive'
+                                }
+                            },
+                            {
+                                cin: {
+                                    contains: trimmedQuery,
+                                    mode: 'insensitive'
+                                }
+                            },
+                            {
+                                email: {
+                                    contains: trimmedQuery,
+                                    mode: 'insensitive'
+                                }
+                            }
+                        ]
+                    }
+                ]
             },
             include: {
                 personnels: {
                     select: {
                         fonction: true,
-                        specialite: true
+                        specialite: true,
+                        idpersonnel: true
                     }
                 },
                 personne_role: {
@@ -51,128 +98,47 @@ export async function GET(request: NextRequest) {
                         }
                     }
                 }
-            }
+            },
+            take: 20,
+            orderBy: [
+                { nom: 'asc' },
+                { prenom: 'asc' }
+            ]
         });
 
-        if (!person) {
-            console.log('Searching personnel by Email:', trimmedQuery);
-            // 2. Try exact match by email (only personnel)
-            person = await prisma.personne.findFirst({
-                where: {
-                    email: trimmedQuery,
-                    personnels: {
-                        some: {}
-                    }
-                },
-                include: {
-                    personnels: {
-                        select: {
-                            fonction: true,
-                            specialite: true
-                        }
-                    },
-                    personne_role: {
-                        select: {
-                            role: true
-                        }
-                    },
-                    personne_departement: {
-                        include: {
-                            departements: {
-                                select: {
-                                    nom: true,
-                                    coded: true
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
+        console.log(`Found ${personnel.length} personnel records`);
 
-        if (!person) {
-            console.log('Searching personnel by partial matches:', trimmedQuery);
-            // 3. Partial match on several fields (only personnel)
-            const partialMatches = await prisma.personne.findMany({
-                where: {
-                    OR: [
-                        {
-                            nom: {
-                                contains: trimmedQuery,
-                                mode: 'insensitive'
-                            }
-                        },
-                        {
-                            prenom: {
-                                contains: trimmedQuery,
-                                mode: 'insensitive'
-                            }
-                        },
-                        {
-                            cin: {
-                                contains: trimmedQuery,
-                                mode: 'insensitive'
-                            }
-                        },
-                        {
-                            email: {
-                                contains: trimmedQuery,
-                                mode: 'insensitive'
-                            }
-                        }
-                    ],
-                    personnels: {
-                        some: {}
-                    }
-                },
-                include: {
-                    personnels: {
-                        select: {
-                            fonction: true,
-                            specialite: true
-                        }
-                    },
-                    personne_role: {
-                        select: {
-                            role: true
-                        }
-                    },
-                    personne_departement: {
-                        include: {
-                            departements: {
-                                select: {
-                                    nom: true,
-                                    coded: true
-                                }
-                            }
-                        }
-                    }
-                },
-                take: 1,
-                orderBy: [
-                    { nom: 'asc' },
-                    { prenom: 'asc' }
-                ]
-            });
-
-            if (partialMatches.length > 0) {
-                person = partialMatches[0];
-            }
-        }
-
-        if (!person) {
+        if (personnel.length === 0) {
             return NextResponse.json([]);
         }
 
-        // Add type info and return as array for compatibility
-        const result = {
+        // Sort results to prioritize exact matches
+        const sortedPersonnel = personnel.sort((a, b) => {
+            const aExactMatch =
+                a.cin?.toLowerCase() === trimmedQuery.toLowerCase() ||
+                a.email?.toLowerCase() === trimmedQuery.toLowerCase();
+            const bExactMatch =
+                b.cin?.toLowerCase() === trimmedQuery.toLowerCase() ||
+                b.email?.toLowerCase() === trimmedQuery.toLowerCase();
+
+            if (aExactMatch && !bExactMatch) return -1;
+            if (!aExactMatch && bExactMatch) return 1;
+
+            // If both or neither are exact matches, sort by name
+            const aName = `${a.nom} ${a.prenom}`.toLowerCase();
+            const bName = `${b.nom} ${b.prenom}`.toLowerCase();
+            return aName.localeCompare(bName);
+        });
+
+        // Add type info to each result
+        const results = sortedPersonnel.map(person => ({
             ...person,
             isPersonnel: true,
             isStudent: false,
             type: 'personnel'
-        };
+        }));
 
-        return NextResponse.json([result]);
+        return NextResponse.json(results);
     } catch (error) {
         console.error('Search error:', error);
         return NextResponse.json(
