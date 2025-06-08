@@ -1,37 +1,27 @@
-// layout.tsx
+// app/administration/dashboard/layout.tsx
 'use client';
 
 import React, { ReactNode } from 'react';
 import RoleNav from "@/app/components/Sidebar";
 
-
-
-
-interface AdminLayoutProps {
+type LayoutProps = {
   children: ReactNode;
-  pageTitle?: string;
-  pageSubtitle?: string;
-}
+};
 
-export default function AdminLayout({
-                                      children,
-}: AdminLayoutProps) {
+export default function AdminLayout({ children }: LayoutProps) {
   return (
-      <div className="admin-container">
-        {<RoleNav />}
-        <RoleNav />
-    <div className="admin-app">
-      <header className="app-header">
-        <div className="header-content">
-
-        </div>
-      </header>
-
-      <main className="dashboard-container">
+    <div className="admin-container">
+      <RoleNav />
+      <div className="admin-app">
+        <header className="app-header">
+          <div className="header-content">
+            {/* Optional header content */}
+          </div>
+        </header>
+        <main className="dashboard-container">
           {children}
-
-      </main>
-    </div>
+        </main>
       </div>
+    </div>
   );
 }
