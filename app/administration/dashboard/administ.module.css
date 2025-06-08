@@ -76,9 +76,9 @@
 
 
 
-body {
-  margin: 0;
-  overflow: hidden;
+.dashboardBody {
+    margin: 0;
+    overflow: hidden;
 }
 
 .card:nth-child(1) { animation-delay: 0.1s; }
