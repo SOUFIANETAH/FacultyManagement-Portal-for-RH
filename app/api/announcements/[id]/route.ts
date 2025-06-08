@@ -1,16 +1,12 @@
-// app/api/annonces/[coded]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 // GET - Récupérer une annonce spécifique
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, context) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt(context.params.id);
 
     if (isNaN(id)) {
       return NextResponse.json(
@@ -41,12 +37,9 @@ export async function GET(
 }
 
 // PUT - Mettre à jour une annonce spécifique
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, context) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt(context.params.id);
     const data = await request.json();
 
     if (isNaN(id)) {
@@ -56,7 +49,6 @@ export async function PUT(
       );
     }
 
-    // Vérifier si l'annonce existe
     const annonceExistante = await prisma.annonces.findUnique({
       where: { ida: id },
     });
@@ -68,12 +60,10 @@ export async function PUT(
       );
     }
 
-    // Conversion de la date si nécessaire
     if (data.date_pub) {
       data.date_pub = new Date(data.date_pub);
     }
 
-    // Mettre à jour l'annonce
     const annonceMAJ = await prisma.annonces.update({
       where: { ida: id },
       data: {
@@ -95,12 +85,9 @@ export async function PUT(
 }
 
 // DELETE - Supprimer une annonce spécifique
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, context) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt(context.params.id);
 
     if (isNaN(id)) {
       return NextResponse.json(
@@ -109,7 +96,6 @@ export async function DELETE(
       );
     }
 
-    // Vérifier si l'annonce existe
     const annonceExistante = await prisma.annonces.findUnique({
       where: { ida: id },
     });
@@ -121,12 +107,10 @@ export async function DELETE(
       );
     }
 
-    // Supprimer les relations dans la table personne_annonce
     await prisma.personne_annonce.deleteMany({
       where: { ida: id },
     });
 
-    // Supprimer l'annonce
     await prisma.annonces.delete({
       where: { ida: id },
     });
