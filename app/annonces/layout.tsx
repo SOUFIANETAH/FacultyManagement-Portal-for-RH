@@ -1,35 +1,20 @@
-// layout.tsx
 'use client';
 
-import React, { ReactNode } from 'react';
+import React from 'react';
 
-
-
-
-interface AdminLayoutProps {
-  children: ReactNode;
-  pageTitle?: string;
-  pageSubtitle?: string;
-}
-
-export default function AdminLayout({
-                                      children,
-}: AdminLayoutProps) {
+export default function AnnoncesLayout({ children }) {
   return (
-      <div className="admin-container">
+    <div className="admin-container">
+      <div className="admin-app">
+        <header className="app-header">
+          <div className="header-content">
+          </div>
+        </header>
 
-    <div className="admin-app">
-      <header className="app-header">
-        <div className="header-content">
-
-        </div>
-      </header>
-
-      <main className="dashboard-container">
+        <main className="dashboard-container">
           {children}
-
-      </main>
-    </div>
+        </main>
       </div>
+    </div>
   );
 }
