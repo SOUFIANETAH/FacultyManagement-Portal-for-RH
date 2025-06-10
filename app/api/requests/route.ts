@@ -1,7 +1,7 @@
 //api/requests/route.ts
 import prisma from "@/app/lib/db";
 import { NextResponse } from "next/server";
-
+export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const requests = await prisma.requests.findMany({
