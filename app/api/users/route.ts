@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../lib/db';
 import bcrypt from "bcryptjs";
-
+export const dynamic = "force-dynamic";
 export async function GET() {
     try {
         const users = await prisma.user.findMany({
