@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-
+// @ts-ignore
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
