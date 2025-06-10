@@ -1,38 +1,27 @@
-import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/app/lib/db";
-import { AlertType } from "@prisma/client";
+// app/api/document-templates/[id]/route.ts
+import { NextResponse } from "next/server";
+import { PrismaClient } from '@prisma/client';
 
-export async function POST(request: NextRequest) {
+const prisma = new PrismaClient();
+
+export async function DELETE(
+  request: Request,
+  context: { params: { id: string } }
+) {
   try {
-    const body = await request.json();
-    const { title, description, email, type } = body;
+    const templateId = parseInt(context.params.id);
 
-    // Validate required fields
-    if (!title || !description || !email) {
-      return NextResponse.json(
-        { message: "Titre, description et email sont requis" },
-        { status: 400 }
-      );
+    if (isNaN(templateId)) {
+      return NextResponse.json({ error: 'Invalid template ID' }, { status: 400 });
     }
 
-    // Create an alert that will be visible to admin
-    const alert = await prisma.alert.create({
-      data: {
-        title: `Message de ${email}: ${title}`,
-        description: description,
-        type: AlertType.info,
-      },
+    await prisma.document_templates.delete({
+      where: { id: templateId }
     });
 
-    return NextResponse.json(
-      { message: "Message envoyé avec succès", alertId: alert.id },
-      { status: 201 }
-    );
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error creating message:", error);
-    return NextResponse.json(
-      { message: "Une erreur est survenue lors de l'envoi du message" },
-      { status: 500 }
-    );
+    console.error('Error deleting template:', error);
+    return NextResponse.json({ error: 'Error deleting template' }, { status: 500 });
   }
 }
