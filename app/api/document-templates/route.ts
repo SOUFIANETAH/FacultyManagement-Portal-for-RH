@@ -1,30 +1,43 @@
-// app/api/document-templates/[id]/route.ts
-import { NextResponse, NextRequest } from 'next/server';
+// app/api/document-templates/route.ts
+import { NextResponse } from "next/server";
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export async function DELETE(
-  request: NextRequest,
-  context: { params: { id: string } }
-) {
-  try {
-    const templateId = parseInt(context.params.id);
+// GET all document templates
+export async function GET() {
+    try {
+        const templates = await prisma.document_templates.findMany({
+            orderBy: { createdAt: 'desc' }
+        });
 
-    if (isNaN(templateId)) {
-      return NextResponse.json({ error: 'Invalid template ID' }, { status: 400 });
+        return NextResponse.json(templates);
+    } catch (error) {
+        console.error('Error fetching templates:', error);
+        return NextResponse.json({ error: 'Error fetching templates' }, { status: 500 });
     }
+}
 
-    await prisma.document_templates.delete({
-      where: { id: templateId },
-    });
+// POST create new template
+export async function POST(request: Request) {
+    try {
+        const { type, title, content } = await request.json();
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting template:', error);
-    return NextResponse.json(
-      { error: 'Error deleting template' },
-      { status: 500 }
-    );
-  }
+        if (!type || !title || !content) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        const template = await prisma.document_templates.create({
+            data: {
+                type,
+                title,
+                content
+            }
+        });
+
+        return NextResponse.json(template);
+    } catch (error) {
+        console.error('Error creating template:', error);
+        return NextResponse.json({ error: 'Error creating template' }, { status: 500 });
+    }
 }
