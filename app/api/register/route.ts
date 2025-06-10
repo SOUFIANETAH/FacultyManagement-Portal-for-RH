@@ -2,7 +2,7 @@
 import prisma from "../../lib/db";
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
-
+export const dynamic = "force-dynamic";
 export async function GET() {
     try {
         const requests = await prisma.requests.findMany({
