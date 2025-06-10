@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import db, { queryWithRetries } from "@/app/lib/db";
 import { randomBytes } from "crypto";
 import { hash } from "bcryptjs";
-
+export const dynamic = "force-dynamic";
 // This would typically be sent via email
 // For this implementation, we'll just generate a token and update the user record
 export async function POST(req: NextRequest) {
