@@ -1,5 +1,5 @@
 import prisma from "../../../lib/db"
-
+export const dynamic = "force-dynamic";
 export async function GET() {
     try {
         const count = await prisma.departements.count();
