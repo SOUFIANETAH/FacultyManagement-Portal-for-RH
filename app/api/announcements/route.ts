@@ -6,7 +6,7 @@ import { writeFile, mkdir } from 'fs/promises';
 import { join, dirname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
-
+export const dynamic = "force-dynamic";
 const prisma = new PrismaClient();
 
 const allowedFileTypes = [
