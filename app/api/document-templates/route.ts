@@ -1,7 +1,7 @@
 // app/api/document-templates/route.ts
 import { NextResponse } from "next/server";
 import { PrismaClient } from '@prisma/client';
-
+export const dynamic = "force-dynamic";
 const prisma = new PrismaClient();
 
 // GET all document templates
