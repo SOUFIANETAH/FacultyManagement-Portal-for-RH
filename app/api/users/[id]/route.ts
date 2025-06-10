@@ -1,7 +1,7 @@
 import prisma from "../../../lib/db";
 import { NextRequest,NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-
+export const dynamic = "force-dynamic";
 export async function GET(Request: NextRequest, { params }: { params: { id: string } }) {
     try {
             const user= await prisma.user.findUnique({
