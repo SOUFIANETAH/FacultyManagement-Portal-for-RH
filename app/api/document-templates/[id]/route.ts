@@ -6,10 +6,10 @@ const prisma = new PrismaClient();
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Record<string, string> }
 ) {
   try {
-    const templateId = parseInt(params.id);
+    const templateId = parseInt(context.params.id);
 
     if (isNaN(templateId)) {
       return NextResponse.json({ error: 'Invalid template ID' }, { status: 400 });
