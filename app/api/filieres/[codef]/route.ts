@@ -1,7 +1,7 @@
 // app/api/filieres/[codef]/route.ts
 import { NextResponse } from 'next/server';
 import prisma from "../../../lib/db";
-
+export const dynamic = "force-dynamic";
 interface Params {
     params: {
         codef: string;
